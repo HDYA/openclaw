@@ -43,11 +43,15 @@ vi.mock("@microsoft/teams.apps/dist/middleware/auth/jwt-validator.js", () => ({
   },
 }));
 
-vi.mock("node:fs", () => ({
-  readFileSync: vi.fn(
-    () => "-----BEGIN RSA PRIVATE KEY-----\nfake-key\n-----END RSA PRIVATE KEY-----",
-  ),
-}));
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    readFileSync: vi.fn(
+      () => "-----BEGIN RSA PRIVATE KEY-----\nfake-key\n-----END RSA PRIVATE KEY-----",
+    ),
+  };
+});
 
 const { mockGetToken } = vi.hoisted(() => {
   const mockGetToken = vi.fn().mockResolvedValue({ token: "mock-managed-token" });
@@ -176,6 +180,7 @@ describe("createMSTeamsAdapter", () => {
 
   it("passes the OpenClaw User-Agent to the Bot Framework connector client", async () => {
     const creds = {
+      type: "secret",
       appId: "app-id",
       appPassword: "secret",
       tenantId: "tenant-id",
